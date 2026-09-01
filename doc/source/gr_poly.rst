@@ -1042,6 +1042,8 @@ of the two polynomials is zero.
               int gr_poly_resultant_sylvester(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
               int _gr_poly_resultant_small(gr_ptr res, gr_srcptr poly1, slong len1, gr_srcptr poly2, slong len2, gr_ctx_t ctx)
               int gr_poly_resultant_small(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
+              int _gr_poly_resultant_multipoint(gr_ptr res, gr_srcptr poly1, slong len1, gr_srcptr poly2, slong len2, gr_ctx_t ctx)
+              int gr_poly_resultant_multipoint(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
               int _gr_poly_resultant(gr_ptr res, gr_srcptr poly1, slong len1, gr_srcptr poly2, slong len2, gr_ctx_t ctx)
               int gr_poly_resultant(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
 
@@ -1063,6 +1065,37 @@ of the two polynomials is zero.
     Currently this function handles the cases where `len1 \le 2`
     or `len2 \le 3`.
 
+    The *multipoint* version is a specialization for bivariate polynomials,
+    that is, for the case where *ctx* is a polynomial ring `R[x]`, so that
+    *poly1* and *poly2* are elements of `R[x][y]` and the resultant is taken
+    with respect to `y`. It evaluates the coefficients of *poly1* and *poly2*
+    at sufficiently many points `x = c q^i` in geometric progression, computes
+    the resultants of the resulting univariate polynomials, and interpolates
+    the result.
+
+    Writing `n` for the degree in `y` and `d` for the degree in `x` of the
+    inputs, the resultant has degree at most `2 n d` in `x`, so `O(nd)`
+    evaluation points are used. Both the evaluations and the `O(nd)`
+    univariate resultants of degree `n` cost `\tilde{O}(n^2 d)` operations
+    in `R`, which is the total complexity. This is quasi-linear in the number
+    of points, but not in the size `O(nd)` of the input and output: for
+    inputs of bidegree `(n, n)`, whose size is `O(n^2)`, the cost is
+    `\tilde{O}(n^3)`.
+
+    The evaluation points are processed in blocks, so that the working space
+    is `O(nd)` words, proportional to the size of the input and output,
+    rather than the `O(n^2 d)` words that holding every coefficient at every
+    point would take.
+
+    Currently `R` must be ``nmod``, that is, *ctx* must be a polynomial ring
+    over :func:`gr_ctx_init_nmod`. The modulus must be prime and larger than
+    the number `\deg_y(f) \deg_x(g) + \deg_x(f) \deg_y(g) + 1` of evaluation
+    points required, so that a geometric progression of that many distinct
+    points exists. ``GR_UNABLE`` is returned when these conditions do not
+    hold, and also in the unlikely event that no geometric progression
+    avoiding the roots of the leading coefficient of *poly1* is found after a
+    few attempts.
+
     The *subresultant* version uses the subresultant PRS algorithm.
     It is valid whenever the ring is a GCD domain.
 
@@ -1071,7 +1104,8 @@ of the two polynomials is zero.
     and as a fallback for rings without division.
 
     The default version attempts to choose an appropriate
-    algorithm automatically.
+    algorithm automatically; in particular it uses the *multipoint*
+    algorithm over bivariate polynomial rings where that algorithm applies.
 
 
 Squarefree factorization

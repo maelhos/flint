@@ -27,6 +27,20 @@ int _gr_poly_resultant(gr_ptr res, gr_srcptr A, slong lenA, gr_srcptr B, slong l
     if (_gr_poly_resultant_small(res, A, lenA, B, lenB, ctx) == GR_SUCCESS)
         return GR_SUCCESS;
 
+    /* Bivariate polynomials over a word-size prime field: evaluate, compute
+       univariate resultants, interpolate. This is asymptotically faster than
+       the generic algorithms used below (currently the Sylvester determinant,
+       since polynomial rings do not report being a UFD), and it is faster in
+       practice down to the smallest lengths reaching this point. No cutoff is
+       applied; note that the subresultant PRS is somewhat faster for
+       lenA * lenB below roughly 36, should it become the fallback here. */
+    if (ctx->which_ring == GR_CTX_GR_POLY &&
+            POLYNOMIAL_ELEM_CTX(ctx)->which_ring == GR_CTX_NMOD)
+    {
+        if (_gr_poly_resultant_multipoint(res, A, lenA, B, lenB, ctx) == GR_SUCCESS)
+            return GR_SUCCESS;
+    }
+
     if (gr_ctx_is_finite(ctx) == T_TRUE || gr_ctx_is_field(ctx) == T_TRUE)
     {
         if (FLINT_MIN(lenA, lenB) >= HGCD_CUTOFF && gr_ctx_is_finite(ctx) == T_TRUE)
