@@ -1044,6 +1044,8 @@ of the two polynomials is zero.
               int gr_poly_resultant_small(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
               int _gr_poly_resultant_multipoint(gr_ptr res, gr_srcptr poly1, slong len1, gr_srcptr poly2, slong len2, gr_ctx_t ctx)
               int gr_poly_resultant_multipoint(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
+              int _gr_poly_resultant_modular(gr_ptr res, gr_srcptr poly1, slong len1, gr_srcptr poly2, slong len2, gr_ctx_t ctx)
+              int gr_poly_resultant_modular(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
               int _gr_poly_resultant(gr_ptr res, gr_srcptr poly1, slong len1, gr_srcptr poly2, slong len2, gr_ctx_t ctx)
               int gr_poly_resultant(gr_ptr res, const gr_poly_t f, const gr_poly_t g, gr_ctx_t ctx)
 
@@ -1096,6 +1098,40 @@ of the two polynomials is zero.
     avoiding the roots of the leading coefficient of *poly1* is found after a
     few attempts.
 
+    The *modular* version is a specialization for bivariate polynomials over
+    `\mathbb{Z}` and `\mathbb{Q}`, that is, for the case where *ctx* is a
+    polynomial ring `R[x]` with `R` being :func:`gr_ctx_init_fmpz` or
+    :func:`gr_ctx_init_fmpq`; ``GR_UNABLE`` is returned for other rings. It
+    reduces the inputs modulo several word-size primes, calls the *multipoint*
+    algorithm for each of them, and reconstructs the result by Chinese
+    remaindering.
+
+    Over `\mathbb{Q}`, denominators are cleared first, using the homogeneity
+    `\operatorname{res}(a f, b g) = a^{\deg_y(g)} b^{\deg_y(f)}
+    \operatorname{res}(f, g)`; the same identity is used to divide out the
+    contents of the inputs in `\mathbb{Z}` and in `\mathbb{Z}[x]` before the
+    modular computation.
+
+    The number of primes needed is determined by the bound
+
+    .. math ::
+
+        \|\operatorname{res}_y(f, g)\|_{\infty} \le
+            \left(\sum_i \|f_i\|_1^2\right)^{\deg_y(g)/2}
+            \left(\sum_j \|g_j\|_1^2\right)^{\deg_y(f)/2}
+
+    where `f = \sum_i f_i(x) y^i` and `g = \sum_j g_j(x) y^j`. This bound is
+    only used as a limit: primes are added until the reconstruction stops
+    changing, which is checked cheaply on a random linear combination of the
+    coefficients and then confirmed against a fresh prime. This makes the cost
+    depend on the actual size of the resultant rather than on the bound, which
+    matters most when the resultant is much smaller than the bound predicts,
+    for instance when it vanishes because the inputs have a common factor.
+    Since a verification prime is drawn from a fixed sequence, a result
+    accepted this way is correct unless the input is constructed adversarially
+    against that sequence; running to the bound, which happens whenever the
+    reconstruction has not settled, is unconditional.
+
     The *subresultant* version uses the subresultant PRS algorithm.
     It is valid whenever the ring is a GCD domain.
 
@@ -1105,7 +1141,9 @@ of the two polynomials is zero.
 
     The default version attempts to choose an appropriate
     algorithm automatically; in particular it uses the *multipoint*
-    algorithm over bivariate polynomial rings where that algorithm applies.
+    algorithm over bivariate polynomial rings where that algorithm applies,
+    and the *modular* algorithm over bivariate polynomial rings over
+    `\mathbb{Z}` and `\mathbb{Q}` above a degree cutoff.
 
 
 Squarefree factorization
