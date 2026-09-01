@@ -1,5 +1,7 @@
 /*
     Copyright (C) 2026 Mael Hostettler
+    Copyright (C) 2026 Antoine Bak
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of FLINT.
 
