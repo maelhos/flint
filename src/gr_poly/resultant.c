@@ -20,6 +20,10 @@
 #define HGCD_CUTOFF 200
 #define HGCD_INNER_CUTOFF 100
 
+/* Cutoff on lenA * lenB for the multipoint algorithm over bivariate
+   polynomial rings over nmod; below this the subresultant PRS is faster. */
+#define MULTIPOINT_CUTOFF 36
+
 /* Tuning for the multimodular algorithm over bivariate polynomial rings over
    Z and Q: it is used when the degree in y of the smaller input, or the degree
    in x of the resultant, reaches these values. */
@@ -34,14 +38,11 @@ int _gr_poly_resultant(gr_ptr res, gr_srcptr A, slong lenA, gr_srcptr B, slong l
         return GR_SUCCESS;
 
     /* Bivariate polynomials over a word-size prime field: evaluate, compute
-       univariate resultants, interpolate. This is asymptotically faster than
-       the generic algorithms used below (currently the Sylvester determinant,
-       since polynomial rings do not report being a UFD), and it is faster in
-       practice down to the smallest lengths reaching this point. No cutoff is
-       applied; note that the subresultant PRS is somewhat faster for
-       lenA * lenB below roughly 36, should it become the fallback here. */
+       univariate resultants, interpolate. Asymptotically faster than the
+       subresultant PRS below, which is still ahead at the smallest sizes. */
     if (ctx->which_ring == GR_CTX_GR_POLY &&
-            POLYNOMIAL_ELEM_CTX(ctx)->which_ring == GR_CTX_NMOD)
+            POLYNOMIAL_ELEM_CTX(ctx)->which_ring == GR_CTX_NMOD &&
+            lenA * lenB >= MULTIPOINT_CUTOFF)
     {
         if (_gr_poly_resultant_multipoint(res, A, lenA, B, lenB, ctx) == GR_SUCCESS)
             return GR_SUCCESS;

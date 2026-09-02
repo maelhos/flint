@@ -1152,7 +1152,8 @@ of the two polynomials is zero.
     algorithm automatically; in particular it uses the *multipoint*
     algorithm over bivariate polynomial rings where that algorithm applies,
     and the *modular* algorithm over bivariate polynomial rings over
-    `\mathbb{Z}` and `\mathbb{Q}` above a degree cutoff.
+    `\mathbb{Z}` and `\mathbb{Q}`, both above a degree cutoff below which
+    the subresultant PRS is faster.
 
 
 Squarefree factorization
