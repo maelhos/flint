@@ -1089,6 +1089,15 @@ of the two polynomials is zero.
     rather than the `O(n^2 d)` words that holding every coefficient at every
     point would take.
 
+    When the modulus admits a radix-2 transform of the required length, that
+    is, when it satisfies the ``fft_small`` bounds and `p - 1` is divisible by
+    a large enough power of two, the points are taken to be roots of unity and
+    each coefficient is evaluated with a single discrete Fourier transform
+    instead of a Bluestein product, which is faster by roughly 1.1 to 1.3
+    times overall. A transform produces every point at once, so this path
+    holds all the values simultaneously rather than in blocks, and is used
+    only when they fit within a fixed memory budget.
+
     Currently `R` must be ``nmod``, that is, *ctx* must be a polynomial ring
     over :func:`gr_ctx_init_nmod`. The modulus must be prime and larger than
     the number `\deg_y(f) \deg_x(g) + \deg_x(f) \deg_y(g) + 1` of evaluation

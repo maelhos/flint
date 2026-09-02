@@ -13,6 +13,23 @@
 #include "ulong_extras.h"
 #include "gr_poly.h"
 
+/* a prime p = m 2^16 + 1, for which the evaluation can use a DFT */
+static ulong
+_fft_prime(flint_rand_t state, int bits)
+{
+    ulong m;
+
+    for (m = (UWORD(1) << (bits - 16)) - 1 - n_randint(state, 1000);
+         m > (UWORD(1) << (bits - 17)); m--)
+    {
+        ulong p = (m << 16) + 1;
+        if (n_is_prime(p))
+            return p;
+    }
+
+    return 0;
+}
+
 /* random bivariate polynomial of length at most leny in y whose
    coefficients have length at most lenx in x */
 static int
@@ -78,6 +95,71 @@ TEST_FUNCTION_START(gr_poly_resultant_multipoint, state)
         if (s1 == GR_SUCCESS && status == GR_SUCCESS && gr_equal(x, y, ctx) == T_FALSE)
         {
             flint_printf("FAIL (vs sylvester):\n");
+            gr_ctx_println(ctx);
+            flint_printf("f = "); gr_poly_print(f, ctx); flint_printf("\n\n");
+            flint_printf("g = "); gr_poly_print(g, ctx); flint_printf("\n\n");
+            flint_printf("x = "); gr_println(x, ctx);
+            flint_printf("y = "); gr_println(y, ctx);
+            fflush(stdout);
+            flint_abort();
+        }
+
+        gr_poly_clear(f, ctx);
+        gr_poly_clear(g, ctx);
+        gr_heap_clear(x, ctx);
+        gr_heap_clear(y, ctx);
+        gr_ctx_clear(ctx);
+        gr_ctx_clear(cctx);
+    }
+
+    /* Same, over prime fields supporting a DFT of the required length, which
+       is the other evaluation path. Coefficients in y are often zero here, so
+       that the degenerate cases of that path are covered too. */
+    for (iter = 0; iter < 200 * flint_test_multiplier(); iter++)
+    {
+        gr_ctx_t cctx, ctx;
+        gr_poly_t f, g;
+        gr_ptr x, y;
+        ulong p;
+        int status = GR_SUCCESS;
+        int s1;
+
+        p = _fft_prime(state, 24 + n_randint(state, 27));
+
+        if (p == 0)
+            continue;
+
+        gr_ctx_init_nmod(cctx, p);
+        gr_ctx_init_gr_poly(ctx, cctx);
+
+        gr_poly_init(f, ctx);
+        gr_poly_init(g, ctx);
+        x = gr_heap_init(ctx);
+        y = gr_heap_init(ctx);
+
+        status |= _gr_poly_randtest_bivariate(f, state, 1 + n_randint(state, 7),
+                                              1 + n_randint(state, 7), ctx, cctx);
+        status |= _gr_poly_randtest_bivariate(g, state, 1 + n_randint(state, 7),
+                                              1 + n_randint(state, 7), ctx, cctx);
+
+        if (n_randint(state, 3) == 0)
+        {
+            /* a common factor in y makes the resultant zero */
+            gr_poly_t h;
+            gr_poly_init(h, ctx);
+            status |= _gr_poly_randtest_bivariate(h, state, 2 + n_randint(state, 2),
+                                                  1 + n_randint(state, 3), ctx, cctx);
+            status |= gr_poly_mul(f, f, h, ctx);
+            status |= gr_poly_mul(g, g, h, ctx);
+            gr_poly_clear(h, ctx);
+        }
+
+        s1 = gr_poly_resultant_multipoint(x, f, g, ctx);
+        status |= gr_poly_resultant_sylvester(y, f, g, ctx);
+
+        if (s1 == GR_SUCCESS && status == GR_SUCCESS && gr_equal(x, y, ctx) == T_FALSE)
+        {
+            flint_printf("FAIL (vs sylvester, DFT evaluation):\n");
             gr_ctx_println(ctx);
             flint_printf("f = "); gr_poly_print(f, ctx); flint_printf("\n\n");
             flint_printf("g = "); gr_poly_print(g, ctx); flint_printf("\n\n");
