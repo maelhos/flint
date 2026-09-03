@@ -1067,79 +1067,16 @@ of the two polynomials is zero.
     Currently this function handles the cases where `len1 \le 2`
     or `len2 \le 3`.
 
-    The *multipoint* version is a specialization for bivariate polynomials,
-    that is, for the case where *ctx* is a polynomial ring `R[x]`, so that
-    *poly1* and *poly2* are elements of `R[x][y]` and the resultant is taken
-    with respect to `y`. It evaluates the coefficients of *poly1* and *poly2*
-    at sufficiently many points `x = c q^i` in geometric progression, computes
-    the resultants of the resulting univariate polynomials, and interpolates
-    the result.
-
-    Writing `n` for the degree in `y` and `d` for the degree in `x` of the
-    inputs, the resultant has degree at most `2 n d` in `x`, so `O(nd)`
-    evaluation points are used. Both the evaluations and the `O(nd)`
-    univariate resultants of degree `n` cost `\tilde{O}(n^2 d)` operations
-    in `R`, which is the total complexity. This is quasi-linear in the number
-    of points, but not in the size `O(nd)` of the input and output: for
-    inputs of bidegree `(n, n)`, whose size is `O(n^2)`, the cost is
-    `\tilde{O}(n^3)`.
-
-    The evaluation points are processed in blocks, so that the working space
-    is `O(nd)` words, proportional to the size of the input and output,
-    rather than the `O(n^2 d)` words that holding every coefficient at every
-    point would take.
-
-    When the modulus admits a radix-2 transform of the required length, that
-    is, when it satisfies the ``fft_small`` bounds and `p - 1` is divisible by
-    a large enough power of two, the points are taken to be roots of unity and
-    each coefficient is evaluated with a single discrete Fourier transform
-    instead of a Bluestein product, which is faster by roughly 1.1 to 1.3
-    times overall. A transform produces every point at once, so this path
-    holds all the values simultaneously rather than in blocks, and is used
-    only when they fit within a fixed memory budget.
-
-    Currently `R` must be ``nmod``, that is, *ctx* must be a polynomial ring
-    over :func:`gr_ctx_init_nmod`. The modulus must be prime and larger than
-    the number `\deg_y(f) \deg_x(g) + \deg_x(f) \deg_y(g) + 1` of evaluation
-    points required, so that a geometric progression of that many distinct
-    points exists. ``GR_UNABLE`` is returned when these conditions do not
-    hold, and also in the unlikely event that no geometric progression
-    avoiding the roots of the leading coefficient of *poly1* is found after a
-    few attempts.
+    The *multipoint* version is a specialization for bivariate polynomials.
+    It evaluates the coefficients of *poly1* and *poly2* at sufficiently 
+    many points, computes the resultants of the resulting univariate 
+    polynomials and interpolates the result. When the modulus is "FFT-friendly", 
+    the multipoint uses DFT instead of geometric multipoint.
 
     The *modular* version is a specialization for bivariate polynomials over
-    `\mathbb{Z}` and `\mathbb{Q}`, that is, for the case where *ctx* is a
-    polynomial ring `R[x]` with `R` being :func:`gr_ctx_init_fmpz` or
-    :func:`gr_ctx_init_fmpq`; ``GR_UNABLE`` is returned for other rings. It
-    reduces the inputs modulo several word-size primes, calls the *multipoint*
-    algorithm for each of them, and reconstructs the result by Chinese
-    remaindering.
-
-    Over `\mathbb{Q}`, denominators are cleared first, using the homogeneity
-    `\operatorname{res}(a f, b g) = a^{\deg_y(g)} b^{\deg_y(f)}
-    \operatorname{res}(f, g)`; the same identity is used to divide out the
-    contents of the inputs in `\mathbb{Z}` and in `\mathbb{Z}[x]` before the
-    modular computation.
-
-    The number of primes needed is determined by the bound
-
-    .. math ::
-
-        \|\operatorname{res}_y(f, g)\|_{\infty} \le
-            \left(\sum_i \|f_i\|_1^2\right)^{\deg_y(g)/2}
-            \left(\sum_j \|g_j\|_1^2\right)^{\deg_y(f)/2}
-
-    where `f = \sum_i f_i(x) y^i` and `g = \sum_j g_j(x) y^j`. This bound is
-    only used as a limit: primes are added until the reconstruction stops
-    changing, which is checked cheaply on a random linear combination of the
-    coefficients and then confirmed against a fresh prime. This makes the cost
-    depend on the actual size of the resultant rather than on the bound, which
-    matters most when the resultant is much smaller than the bound predicts,
-    for instance when it vanishes because the inputs have a common factor.
-    Since a verification prime is drawn from a fixed sequence, a result
-    accepted this way is correct unless the input is constructed adversarially
-    against that sequence; running to the bound, which happens whenever the
-    reconstruction has not settled, is unconditional.
+    `\mathbb{Z}` and `\mathbb{Q}`. It reduces the inputs modulo several word-size
+    primes, calls the *multipoint* algorithm for each of them, and reconstructs 
+    the result by CRT.
 
     The *subresultant* version uses the subresultant PRS algorithm.
     It is valid whenever the ring is a GCD domain.
