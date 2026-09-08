@@ -1480,6 +1480,129 @@ Multipoint evaluation
     ``xs`` should be reduced modulo the modulus.
 
 
+Geometric evaluation, interpolation and extrapolation
+--------------------------------------------------------------------------------
+
+
+.. function:: void _fmpz_mod_geometric_progression_init_function(fmpz_mod_geometric_progression_t G, const fmpz_t r, slong len, ulong function, const fmpz_mod_ctx_t ctx)
+              void fmpz_mod_geometric_progression_init(fmpz_mod_geometric_progression_t G, const fmpz_t r, slong len, const fmpz_mod_ctx_t ctx)
+
+    Builds a geometric progression multipoint evaluation / interpolation /
+    extrapolation structure.
+
+    The variant with ``function`` builds precomputation for specific
+    functionalities: the lowest three bits of ``function`` act as a mask
+    selecting evaluation (bit `0`), interpolation (bit `1`) and extrapolation
+    (bit `2`). The variant without ``function`` precomputes for all three.
+
+    The set of points used will be `1, r^2, r^4, \ldots, r^{2(len-1)}`.
+
+    The value of ``r`` should be reduced modulo the modulus of ``ctx``
+    and of sufficient multiplicative order such that none of
+    the powers `r^2, r^4, \ldots, r^{2(len-1)}` is one.
+
+    The value of ``len`` should be both greater than or equal to the number of
+    evaluation points to be considered, and greater than or equal to the length
+    of the polynomials to be evaluated / interpolated.
+
+    If the modulus is not prime, these functions will work under the additional
+    assumption that all the used points `r^{2k}` as well as the auxiliary
+    values `r^{2k} - 1` are invertible.
+
+.. function:: void fmpz_mod_geometric_progression_clear(fmpz_mod_geometric_progression_t G, const fmpz_mod_ctx_t ctx)
+
+    Clears the allocated polynomials and vectors used in the geometric
+    progression precomputation ``G``.
+
+.. function:: void _fmpz_mod_poly_evaluate_geometric_fmpz_vec_iter(fmpz * ys, const fmpz * coeffs, slong ilen, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx)
+              void fmpz_mod_poly_evaluate_geometric_fmpz_vec_iter(fmpz * ys, const fmpz_mod_poly_t poly, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx)
+
+    Evaluates the polynomial at the first ``olen`` powers of the square of
+    ``r``, writing the output values to ``ys``. The value of ``r`` should be
+    reduced modulo the modulus.
+
+    Uses Horner's method iteratively.
+
+.. function:: void _fmpz_mod_poly_evaluate_geometric_fmpz_vec_fast_precomp(fmpz * vs, const fmpz * poly, slong ilen, const fmpz_mod_geometric_progression_t G, slong olen, const fmpz_mod_ctx_t ctx)
+
+    Evaluates (``poly``, ``ilen``) at the first ``olen`` values given by the
+    precomputed geometric progression ``G``, which are the first ``olen``
+    powers of the square of ``r``. Requires ``olen <= G->len``.
+
+.. function:: void _fmpz_mod_poly_evaluate_geometric_fmpz_vec_fast(fmpz * ys, const fmpz * coeffs, slong ilen, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx)
+              void fmpz_mod_poly_evaluate_geometric_fmpz_vec_fast(fmpz * ys, const fmpz_mod_poly_t poly, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx)
+
+    Evaluates the polynomial at the first ``olen`` powers of the square of
+    ``r``, writing the output values to ``ys``. The value of ``r`` should be
+    reduced modulo the modulus and of sufficient multiplicative order such that
+    none of the first ``olen`` powers of `r^2` is one.
+
+    Uses fast geometric multipoint evaluation, building a temporary geometric
+    progression precomputation.
+
+.. function:: void _fmpz_mod_poly_interpolate_geometric_fmpz_vec_fast_precomp(fmpz * poly, const fmpz * v, const fmpz_mod_geometric_progression_t G, slong len, const fmpz_mod_ctx_t ctx)
+              void fmpz_mod_poly_interpolate_geometric_fmpz_vec_fast_precomp(fmpz_mod_poly_t poly, const fmpz * v, const fmpz_mod_geometric_progression_t G, slong len, const fmpz_mod_ctx_t ctx)
+
+    Performs interpolation using the geometric progression precomputation ``G``.
+
+    Sets ``poly`` to the unique polynomial of length at most ``len`` that
+    interpolates the ``len`` values in ``v`` according to the parameter set of
+    ``G``. Requires ``len <= G->len``.
+
+.. function:: void fmpz_mod_poly_interpolate_geometric_fmpz_vec_fast(fmpz_mod_poly_t poly, const fmpz_t r, const fmpz * ys, slong len, const fmpz_mod_ctx_t ctx)
+
+    Sets ``poly`` to the unique polynomial of length at most ``len``
+    that interpolates the first ``len`` powers of the square of ``r`` and
+    the ``len`` values in ``ys``.
+
+    The values ``ys`` and ``r`` should be reduced modulo the modulus, and ``r``
+    should be of sufficient order such that none of the first ``len`` powers of
+    `r^2` is one. Aliasing between ``poly`` and ``ys`` is not allowed.
+
+    Uses fast geometric multipoint interpolation, building a temporary
+    geometric progression precomputation.
+
+.. function:: void fmpz_mod_poly_extrapolate_geometric_precomp(fmpz * oval, slong olen, const fmpz * ival, slong ilen, slong offset, const fmpz_mod_geometric_progression_t G, const fmpz_mod_ctx_t ctx)
+              void fmpz_mod_poly_extrapolate_geometric(fmpz * oval, slong olen, const fmpz * ival, slong ilen, slong offset, const fmpz_t r, const fmpz_mod_ctx_t ctx)
+
+    This extrapolates the ``ilen`` input values ``ival`` to compute ``olen``
+    output values ``oval``, based on points that are powers of `r^2` in
+    geometric progression; ``offset`` specifies the output points relative to
+    the input ones.
+
+    More precisely, let `m` stand for ``ilen``, let `n` stand for ``olen``, and
+    let `c` be any integer that is invertible modulo the modulus. In this
+    description we assume `r` has "large enough" order; more details are given
+    below. The input ``ival`` is interpreted as the list of values `(f(c \cdot
+    r^{2(k+i)}))_{0 \le i < m}` of some polynomial `f` of degree less than `m`,
+    evaluated on the subsequence `(c \cdot r^{2(k+i)})_{0 \le i < m}` of the
+    geometric progression, for some given `k \ge 0`. Then the output ``oval``
+    is the list of values `(f(c \cdot r^{2(\ell+j)}))_{0 \le j < n}`, for the
+    starting index `\ell = k + \texttt{offset}`.
+
+    The input constraints are as follows. The algorithm does not need to know
+    about `c`, nor about `k` and `\ell` except for their difference
+    `\texttt{offset} = \ell - k`. The value `r` should be reduced modulo the
+    modulus. There are two situations: forward extrapolation (when `\ell >
+    k`, i.e., ``offset`` is positive) and backward extrapolation (when `\ell <
+    k`, i.e., ``offset`` is negative).
+
+    - In the forward case, `r` should have sufficient multiplicative order so
+      that none of the first ``offset + olen`` powers of `r^2` is one, and
+      one should have ``offset >= ilen``. The latter means that the input and
+      output lists of points are disjoint (since `\ell \ge k+m`).
+
+    - In the backward case, `r` should have sufficient multiplicative order so
+      that none of the first ``ilen - offset`` powers of `r^2` is one, and one
+      should have ``offset + olen <= 0`` (recall that here ``offset`` is
+      negative). The latter means that the input and output lists of points are
+      disjoint (since `\ell+n \le k`).
+
+    The function without ``_precomp`` builds a temporary geometric progression
+    precomputation relative to ``r`` and the modulus, and calls the version
+    with ``_precomp`` with this additional data.
+
+
 Composition
 --------------------------------------------------------------------------------
 

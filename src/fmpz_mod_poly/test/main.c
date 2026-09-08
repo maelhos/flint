@@ -47,6 +47,8 @@
 #include "t-div_series.c"
 #include "t-evaluate_fmpz.c"
 #include "t-evaluate_fmpz_vec.c"
+#include "t-evaluate_geometric_fmpz_vec_fast.c"
+#include "t-extrapolate_geometric.c"
 #include "t-find_distinct_nonzero_roots.c"
 #include "t-frobenius_powers_precomp.c"
 #include "t-gcd.c"
@@ -57,6 +59,7 @@
 #include "t-get_set_nmod_poly.c"
 #include "t-init_realloc_clear.c"
 #include "t-invmod.c"
+#include "t-interpolate_geometric_fmpz_vec_fast.c"
 #include "t-inv_series.c"
 #include "t-invsqrt_series.c"
 #include "t-minpoly.c"
@@ -124,6 +127,8 @@ test_struct tests[] =
     TEST_FUNCTION(fmpz_mod_poly_div_series),
     TEST_FUNCTION(fmpz_mod_poly_evaluate_fmpz),
     TEST_FUNCTION(fmpz_mod_poly_evaluate_fmpz_vec),
+    TEST_FUNCTION(fmpz_mod_poly_evaluate_geometric_fmpz_vec_fast),
+    TEST_FUNCTION(fmpz_mod_poly_extrapolate_geometric),
     TEST_FUNCTION(fmpz_mod_poly_find_distinct_nonzero_roots),
     TEST_FUNCTION(fmpz_mod_poly_frobenius_powers_precomp),
     TEST_FUNCTION(fmpz_mod_poly_gcd),
@@ -134,6 +139,7 @@ test_struct tests[] =
     TEST_FUNCTION(fmpz_mod_poly_get_set_nmod_poly),
     TEST_FUNCTION(fmpz_mod_poly_init_realloc_clear),
     TEST_FUNCTION(fmpz_mod_poly_invmod),
+    TEST_FUNCTION(fmpz_mod_poly_interpolate_geometric_fmpz_vec_fast),
     TEST_FUNCTION(fmpz_mod_poly_inv_series),
     TEST_FUNCTION(fmpz_mod_poly_invsqrt_series),
     TEST_FUNCTION(fmpz_mod_poly_minpoly),

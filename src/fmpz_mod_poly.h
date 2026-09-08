@@ -85,6 +85,25 @@ typedef struct
 fmpz_mod_poly_compose_mod_precomp_preinv_arg_t;
 
 
+typedef struct
+{
+    fmpz * ev_s;             /* evaluate: scaling constants */
+    fmpz_mod_poly_t ev_f;    /* evaluate: polynomial */
+    fmpz * int_s1;           /* interpolate: scaling constants */
+    fmpz * int_s2;           /* interpolate: scaling constants */
+    fmpz_mod_poly_t int_f;   /* interpolate: polynomial */
+    fmpz_mod_poly_t ext_ff;  /* extrapolate forward: polynomial  */
+    fmpz_mod_poly_t ext_fb;  /* extrapolate backward: polynomial */
+    fmpz * ext_s1f;          /* extrapolate: forward scaling constant  */
+    fmpz * ext_s1b;          /* extrapolate: backward scaling constant */
+    fmpz * ext_s2;           /* extrapolate: shared scaling constants */
+    fmpz * ext_s3;           /* extrapolate: shared scaling constants */
+    slong len;               /* number of points */
+    ulong function;          /* choice of precomputations */
+} fmpz_mod_geometric_progression_struct;
+
+typedef fmpz_mod_geometric_progression_struct fmpz_mod_geometric_progression_t[1];
+
 /*  Initialisation and memory management *************************************/
 
 FMPZ_MOD_POLY_INLINE
@@ -707,6 +726,26 @@ void fmpz_mod_poly_evaluate_fmpz_vec_fast(fmpz * ys, const fmpz_mod_poly_t poly,
 
 void _fmpz_mod_poly_evaluate_fmpz_vec(fmpz * ys, const fmpz * coeffs, slong len, const fmpz * xs, slong n, const fmpz_mod_ctx_t ctx);
 void fmpz_mod_poly_evaluate_fmpz_vec(fmpz * ys, const fmpz_mod_poly_t poly, const fmpz * xs, slong n, const fmpz_mod_ctx_t ctx);
+
+/* Geometric evaluation / interpolation / extrapolation *********************/
+
+void _fmpz_mod_geometric_progression_init_function(fmpz_mod_geometric_progression_t G, const fmpz_t r, slong len, ulong function, const fmpz_mod_ctx_t ctx);
+void fmpz_mod_geometric_progression_init(fmpz_mod_geometric_progression_t G, const fmpz_t r, slong len, const fmpz_mod_ctx_t ctx);
+void fmpz_mod_geometric_progression_clear(fmpz_mod_geometric_progression_t G, const fmpz_mod_ctx_t ctx);
+
+void _fmpz_mod_poly_evaluate_geometric_fmpz_vec_iter(fmpz * ys, const fmpz * coeffs, slong ilen, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx);
+void fmpz_mod_poly_evaluate_geometric_fmpz_vec_iter(fmpz * ys, const fmpz_mod_poly_t poly, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx);
+
+void _fmpz_mod_poly_evaluate_geometric_fmpz_vec_fast_precomp(fmpz * vs, const fmpz * poly, slong ilen, const fmpz_mod_geometric_progression_t G, slong olen, const fmpz_mod_ctx_t ctx);
+void _fmpz_mod_poly_evaluate_geometric_fmpz_vec_fast(fmpz * ys, const fmpz * coeffs, slong ilen, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx);
+void fmpz_mod_poly_evaluate_geometric_fmpz_vec_fast(fmpz * ys, const fmpz_mod_poly_t poly, const fmpz_t r, slong olen, const fmpz_mod_ctx_t ctx);
+
+void _fmpz_mod_poly_interpolate_geometric_fmpz_vec_fast_precomp(fmpz * poly, const fmpz * v, const fmpz_mod_geometric_progression_t G, slong len, const fmpz_mod_ctx_t ctx);
+void fmpz_mod_poly_interpolate_geometric_fmpz_vec_fast_precomp(fmpz_mod_poly_t poly, const fmpz * v, const fmpz_mod_geometric_progression_t G, slong len, const fmpz_mod_ctx_t ctx);
+void fmpz_mod_poly_interpolate_geometric_fmpz_vec_fast(fmpz_mod_poly_t poly, const fmpz_t r, const fmpz * ys, slong len, const fmpz_mod_ctx_t ctx);
+
+void fmpz_mod_poly_extrapolate_geometric(fmpz * oval, slong olen, const fmpz * ival, slong ilen, slong offset, const fmpz_t r, const fmpz_mod_ctx_t ctx);
+void fmpz_mod_poly_extrapolate_geometric_precomp(fmpz * oval, slong olen, const fmpz * ival, slong ilen, slong offset, const fmpz_mod_geometric_progression_t G, const fmpz_mod_ctx_t ctx);
 
 /*  Composition  *************************************************************/
 
